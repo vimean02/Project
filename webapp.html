@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Khmer Food Wheel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fff9f0;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #b35c00;
+    }
+
+    #wheelCanvas {
+      border: 5px solid #ffcc99;
+      border-radius: 50%;
+      margin: 20px auto;
+      display: block;
+    }
+
+    button {
+      background-color: #ff9933;
+      border: none;
+      padding: 10px 20px;
+      font-size: 18px;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    button:hover {
+      background-color: #e68a00;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 24px;
+      color: #663300;
+    }
+
+    #description {
+      font-size: 18px;
+      color: #4d2600;
+      margin-top: 10px;
+    }
+
+    /* Modal styles */
+    #countdownModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    #modalContent {
+      background-color: #fff;
+      padding: 40px;
+      text-align: center;
+      border-radius: 8px;
+      font-size: 24px;
+      color: #ff6600;
+    }
+
+  </style>
+</head>
+<body>
+  <p><a href="scratch.html">Go to Scratch Page</a></p>
+
+  <h1>Spin the Khmer Food Wheel!</h1>
+  <canvas id="wheelCanvas" width="400" height="400"></canvas>
+  <br />
+  <button onclick="spin()">Spin</button>
+  <div id="result"></div>
+  <div id="description"></div>
+
+  <!-- Modal for countdown -->
+  <div id="countdownModal">
+    <div id="modalContent">
+      Choosing in <span id="countdownText">3...</span>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const dishes = [
+      { name: "Amok Trey", description: "A traditional Khmer dish made with fish, coconut milk, and curry paste, often steamed in a banana leaf." },
+      { name: "Bai Sach Chrouk", description: "A popular breakfast dish of grilled pork served with rice, pickled vegetables, and a side of soup." },
+      { name: "Nom Banh Chok", description: "A Cambodian noodle dish served with a fish-based gravy, fresh vegetables, and herbs." },
+      { name: "Samlor Korko", description: "A rich Cambodian soup made with mixed vegetables, herbs, and a variety of meats or fish." },
+      { name: "Chek Khtis", description: "A dessert made with bananas cooked in a sweet coconut sauce, often served warm." },
+      { name: "Prahok Ktis", description: "A dipping sauce made from fermented fish paste, mixed with minced pork, coconut milk, and spices." }
+    ];
+    const colors = ["#ffe0cc", "#ffcc99", "#ffd9b3", "#ffb366", "#ffa64d", "#ff944d"];
+    const slices = dishes.length;
+    const sliceAngle = (2 * Math.PI) / slices;
+    let currentAngle = 0;
+    let spinning = false;
+    let countdownValue = 3;
+
+    // Draw wheel
+    function drawWheel(angleOffset = 0) {
+      for (let i = 0; i < slices; i++) {
+        const angle = currentAngle + i * sliceAngle;
+        ctx.beginPath();
+        ctx.moveTo(200, 200);
+        ctx.arc(200, 200, 180, angle, angle + sliceAngle);
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.fill();
+        ctx.stroke();
+
+        // Add dish name on the wheel
+        ctx.save();
+        ctx.translate(200, 200);
+        ctx.rotate(angle + sliceAngle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#4d2600";
+        ctx.font = "16px Arial";
+        ctx.fillText(dishes[i].name, 160, 10);
+        ctx.restore();
+      }
+    }
+
+    // Spin function
+    function spin() {
+      if (spinning) return;
+      spinning = true;
+
+      let spinAngle = Math.random() * 360 + 720; // spin 2–3 times
+      let duration = 3000;
+      let start = null;
+
+      // Show modal for countdown
+      document.getElementById('countdownModal').style.display = 'flex';
+
+      // Start countdown during spin
+      countdownValue = 3; // reset countdown to 3 each time
+      document.getElementById('countdownText').textContent = `${countdownValue}...`;
+
+      const countdownInterval = setInterval(() => {
+        countdownValue--;
+        if (countdownValue > 0) {
+          document.getElementById('countdownText').textContent = `${countdownValue}...`;
+        } else {
+          document.getElementById('countdownText').textContent = `Spin!`;
+        }
+
+        if (countdownValue <= 0) {
+          clearInterval(countdownInterval);
+        }
+      }, 1000);
+
+      function animate(timestamp) {
+        if (!start) start = timestamp;
+        let progress = timestamp - start;
+        let easedProgress = easeOut(progress / duration);
+        currentAngle = (spinAngle * easedProgress) * Math.PI / 180;
+
+        // Clear canvas and redraw wheel
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawWheel();
+
+        if (progress < duration) {
+          requestAnimationFrame(animate);
+        } else {
+          spinning = false;
+          showResult();
+          // Hide modal once spin is complete
+          document.getElementById('countdownModal').style.display = 'none';
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    function easeOut(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function showResult() {
+      // Adjust the angle to make sure it's within the 0 to 2PI range
+      const normalizedAngle = currentAngle % (2 * Math.PI);
+      const adjustedAngle = (normalizedAngle + (Math.PI / 2)) % (2 * Math.PI); // Offset by 90 degrees for the 12 o'clock position
+      const index = Math.floor(adjustedAngle / sliceAngle) % slices;
+      const chosenDish = dishes[index];
+      document.getElementById("result").textContent = `You got: ${chosenDish.name}!`;
+      document.getElementById("description").textContent = chosenDish.description;
+    }
+  </script>
+</body>
+</html>
